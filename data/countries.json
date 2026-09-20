@@ -1,0 +1,5 @@
+{
+    "project": "CountryVision AI",
+    "description": "CountryVision AI uses the REST Countries API for live country information.",
+    "version": "1.0"
+}

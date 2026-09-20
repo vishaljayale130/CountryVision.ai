@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="description" content="CountryVision AI - Explore countries using AI-powered information.">
+
+    <title>CountryVision AI - Explore Countries</title>
+
+
+    <!-- Google Font -->
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+
+    <!-- Main CSS -->
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+
+<body>
+
+
+    <!-- =========================================
+         BACKGROUND EFFECTS
+         ========================================= -->
+
+    <div class="background-orb orb-one"></div>
+
+    <div class="background-orb orb-two"></div>
+
+
+    <!-- =========================================
+         NAVIGATION BAR
+         ========================================= -->
+
+    <header class="navbar">
+
+        <a href="#home" class="brand">
+
+            <span class="brand-icon">🌎</span>
+
+            <span>
+                Country<b>Vision</b> AI
+            </span>
+
+        </a>
+
+
+        <nav>
+
+            <a href="#home">
+                Home
+            </a>
+
+            <a href="#explore">
+                Explore
+            </a>
+
+            <a href="#about">
+                About
+            </a>
+
+            <button id="themeBtn" class="icon-btn" type="button" title="Change theme">
+                ☾
+            </button>
+
+        </nav>
+
+    </header>
+
+
+    <!-- =========================================
+         HOME / HERO SECTION
+         ========================================= -->
+
+    <main id="home">
+
+        <section class="hero">
+
+            <span class="badge">
+                ✨ AI COUNTRY EXPLORER
+            </span>
+
+
+            <h1>
+
+                Discover the
+                <span>World</span>
+
+            </h1>
+
+
+            <p>
+
+                Enter a country name and explore its flag, capital, population, geography, currency, languages, government status and more — all in one beautiful place.
+
+            </p>
+
+
+            <!-- SEARCH -->
+
+            <form id="searchForm" class="search-box">
+
+                <span>
+                    🔎
+                </span>
+
+
+                <input type="text" id="countryInput" placeholder="Enter a country name..." autocomplete="off" required>
+
+
+                <button type="submit">
+                    Explore Country
+                </button>
+
+            </form>
+
+
+            <!-- EXAMPLE COUNTRIES -->
+
+            <div class="examples">
+
+                <span>
+                    Try:
+                </span>
+
+
+                <button type="button" class="example" data-country="India">
+                    India
+                </button>
+
+
+                <button type="button" class="example" data-country="Japan">
+                    Japan
+                </button>
+
+
+                <button type="button" class="example" data-country="United States">
+                    United States
+                </button>
+
+
+                <button type="button" class="example" data-country="France">
+                    France
+                </button>
+
+
+                <button type="button" class="example" data-country="Australia">
+                    Australia
+                </button>
+
+            </div>
+
+
+            <p class="hero-note">
+
+                🌐 Live country information • 📱 Responsive design • ⭐ Save favorites
+
+            </p>
+
+        </section>
+
+
+        <!-- =========================================
+             RESULTS SECTION
+             ========================================= -->
+
+        <section id="explore" class="results-section">
+
+
+            <!-- EMPTY STATE -->
+
+            <div id="emptyState" class="empty-state">
+
+                <div class="empty-icon">
+                    🌍
+                </div>
+
+
+                <h2>
+                    Your country adventure starts here
+                </h2>
+
+
+                <p>
+                    Search for any country above to see detailed information.
+                </p>
+
+            </div>
+
+
+            <!-- LOADING -->
+
+            <div id="loading" class="loading hidden">
+
+                <div class="spinner"></div>
+
+
+                <h2>
+                    Exploring the country...
+                </h2>
+
+
+                <p>
+                    Please wait while we collect the latest available information.
+                </p>
+
+            </div>
+
+
+            <!-- ERROR -->
+
+            <div id="errorBox" class="error-box hidden">
+            </div>
+
+
+            <!-- =====================================
+                 COUNTRY RESULT
+                 ===================================== -->
+
+            <div id="countryResult" class="hidden">
+
+
+                <!-- =================================
+                     COUNTRY HEADER
+                     ================================= -->
+
+                <div class="country-header glass">
+
+
+                    <!-- FLAG -->
+
+                    <div class="flag-wrap">
+
+                        <img id="flag" src="" alt="Country flag">
+
+                    </div>
+
+
+                    <!-- COUNTRY TITLE -->
+
+                    <div class="country-title">
+
+                        <div class="eyebrow">
+                            COUNTRY PROFILE
+                        </div>
+
+
+                        <h2 id="countryName">
+                            Country
+                        </h2>
+
+
+                        <p id="officialName">
+                            Official country name
+                        </p>
+
+
+                        <!-- COUNTRY PILLS -->
+
+                        <div class="pills">
+
+                            <span id="capitalPill">
+                                🏛️ Capital
+                            </span>
+
+
+                            <span id="regionPill">
+                                🌍 Region
+                            </span>
+
+
+                            <span id="codePill">
+                                ISO
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- FAVORITE -->
+
+                    <button id="favoriteBtn" class="favorite-btn" type="button" title="Add to favorites">
+                        ☆
+                    </button>
+
+                </div>
+
+
+                <!-- =================================
+                     QUICK FACTS
+                     ================================= -->
+
+                <div class="quick-grid">
+
+
+                    <!-- Population -->
+
+                    <div class="stat-card">
+
+                        <span>
+                            👥
+                        </span>
+
+                        <small>
+                            Population
+                        </small>
+
+                        <strong id="population">
+                            Information not available
+                        </strong>
+
+                    </div>
+
+
+                    <!-- Area -->
+
+                    <div class="stat-card">
+
+                        <span>
+                            📐
+                        </span>
+
+                        <small>
+                            Area
+                        </small>
+
+                        <strong id="area">
+                            Information not available
+                        </strong>
+
+                    </div>
+
+
+                    <!-- Currency -->
+
+                    <div class="stat-card">
+
+                        <span>
+                            💰
+                        </span>
+
+                        <small>
+                            Currency
+                        </small>
+
+                        <strong id="currency">
+                            Information not available
+                        </strong>
+
+                    </div>
+
+
+                    <!-- Languages -->
+
+                    <div class="stat-card">
+
+                        <span>
+                            🗣️
+                        </span>
+
+                        <small>
+                            Languages
+                        </small>
+
+                        <strong id="languages">
+                            Information not available
+                        </strong>
+
+                    </div>
+
+
+                    <!-- Timezone -->
+
+                    <div class="stat-card">
+
+                        <span>
+                            🕐
+                        </span>
+
+                        <small>
+                            Time Zone
+                        </small>
+
+                        <strong id="timezone">
+                            Information not available
+                        </strong>
+
+                    </div>
+
+
+                    <!-- Internet -->
+
+                    <div class="stat-card">
+
+                        <span>
+                            🌐
+                        </span>
+
+                        <small>
+                            Internet Domain
+                        </small>
+
+                        <strong id="domain">
+                            Information not available
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =================================
+                     BASIC INFORMATION + IDENTITY
+                     ================================= -->
+
+                <div class="section-grid">
+
+
+                    <!-- BASIC INFORMATION -->
+
+                    <article class="info-card glass">
+
+                        <div class="section-heading">
+
+                            <span>
+                                📋
+                            </span>
+
+                            <div>
+
+                                <h3>
+                                    Basic Information
+                                </h3>
+
+                                <p>
+                                    General country details
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div id="basicInfo" class="details">
+                        </div>
+
+                    </article>
+
+
+                    <!-- NATIONAL IDENTITY -->
+
+                    <article class="info-card glass">
+
+                        <div class="section-heading">
+
+                            <span>
+                                🏳️
+                            </span>
+
+                            <div>
+
+                                <h3>
+                                    National Identity
+                                </h3>
+
+                                <p>
+                                    National symbols and identity
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div id="identityInfo" class="details">
+                        </div>
+
+                    </article>
+
+                </div>
+
+
+                <!-- =================================
+                     GEOGRAPHY
+                     ================================= -->
+
+                <article class="wide-card glass">
+
+                    <div class="section-heading">
+
+                        <span>
+                            🗺️
+                        </span>
+
+                        <div>
+
+                            <h3>
+                                Geography
+                            </h3>
+
+                            <p>
+                                Location and geographic information
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="geo-layout">
+
+
+                        <!-- GEOGRAPHY DETAILS -->
+
+                        <div id="geoInfo" class="details">
+                        </div>
+
+
+                        <!-- MAP -->
+
+                        <div class="map-card">
+
+                            <iframe id="mapFrame" title="Country map" loading="lazy" src="about:blank">
+                            </iframe>
+
+                        </div>
+
+                    </div>
+
+                </article>
+
+
+                <!-- =================================
+                     GOVERNMENT
+                     ================================= -->
+
+                <article class="wide-card glass">
+
+                    <div class="section-heading">
+
+                        <span>
+                            🏛️
+                        </span>
+
+                        <div>
+
+                            <h3>
+                                Government & International Status
+                            </h3>
+
+                            <p>
+                                Available political and international information
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div id="governmentInfo" class="details four-cols">
+                    </div>
+
+                </article>
+
+
+                <!-- =================================
+                     AI SUMMARY
+                     ================================= -->
+
+                <article class="wide-card glass">
+
+                    <div class="section-heading">
+
+                        <span>
+                            🤖
+                        </span>
+
+                        <div>
+
+                            <h3>
+                                AI Country Summary
+                            </h3>
+
+                            <p>
+                                Easy-to-understand overview
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div id="aiSummary" class="summary">
+
+                        Search for a country to generate its summary.
+
+                    </div>
+
+                </article>
+
+
+                <!-- =================================
+                     RECENT SEARCHES
+                     ================================= -->
+
+                <article class="wide-card glass">
+
+                    <div class="section-heading">
+
+                        <span>
+                            🕘
+                        </span>
+
+                        <div>
+
+                            <h3>
+                                Recent Searches
+                            </h3>
+
+                            <p>
+                                Your recently searched countries
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div id="history" class="favorites">
+                    </div>
+
+
+                    <button id="clearHistory" class="secondary-btn" type="button">
+                        Clear History
+                    </button>
+
+                </article>
+
+
+                <!-- =================================
+                     FAVORITES
+                     ================================= -->
+
+                <article class="wide-card glass">
+
+                    <div class="section-heading">
+
+                        <span>
+                            ⭐
+                        </span>
+
+                        <div>
+
+                            <h3>
+                                Favorite Countries
+                            </h3>
+
+                            <p>
+                                Quickly access countries you like
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div id="favorites" class="favorites">
+                    </div>
+
+                </article>
+
+
+                <!-- =================================
+                     SOURCES
+                     ================================= -->
+
+                <div class="sources">
+
+                    <p>
+
+                        Data retrieved from the REST Countries API and map information displayed using OpenStreetMap.
+
+                    </p>
+
+
+                    <p>
+
+                        Last retrieved:
+                        <strong id="retrievedAt">
+                            —
+                        </strong>
+
+                    </p>
+
+                </div>
+
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================================
+             ABOUT SECTION
+             ========================================= -->
+
+        <section id="about" class="about">
+
+            <span class="badge">
+                ABOUT THE PROJECT
+            </span>
+
+
+            <h2>
+                Explore the world,
+                <span>one country at a time.</span>
+            </h2>
+
+
+            <p>
+
+                CountryVision AI is a beginner-friendly country exploration website created using Python, Flask, HTML, CSS and JavaScript. Enter a country name and the website retrieves available country information and presents it in an easy-to-understand interface.
+
+            </p>
+
+
+            <!-- ABOUT CARDS -->
+
+            <div class="about-cards">
+
+
+                <div>
+
+                    <span>
+                        🤖
+                    </span>
+
+                    <h3>
+                        AI Style
+                    </h3>
+
+                    <p>
+                        Clean AI-inspired interface designed for easy exploration.
+                    </p>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        🌎
+                    </span>
+
+                    <h3>
+                        Global Data
+                    </h3>
+
+                    <p>
+                        Explore countries from different parts of the world.
+                    </p>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        📱
+                    </span>
+
+                    <h3>
+                        Responsive
+                    </h3>
+
+                    <p>
+                        Designed to work on computers, tablets and mobile screens.
+                    </p>
+
+                </div>
+
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- =========================================
+         JAVASCRIPT
+         ========================================= -->
+
+    <script src="{{ url_for('static', filename='script.js') }}">
+    </script>
+
+
+</body>
+
+</html>
