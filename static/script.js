@@ -58,22 +58,28 @@ function arrayText(value) {
 
 function addDetail(container, label, value) {
 
-    const div = document.createElement("div");
+    if (!container) {
+        return;
+    }
 
+    const div = document.createElement("div");
     div.className = "detail";
 
     const small = document.createElement("small");
-
     small.textContent = label;
 
     const strong = document.createElement("strong");
 
-    strong.textContent =
+    if (
         value === null ||
         value === undefined ||
-        value === "" ?
-        "Information not available" :
-        value;
+        value === ""
+    ) {
+        strong.textContent =
+            "Information not available";
+    } else {
+        strong.textContent = value;
+    }
 
     div.appendChild(small);
     div.appendChild(strong);
@@ -104,7 +110,7 @@ function setText(id, value) {
 
 
 // ============================================
-// MAP
+// MAP URL
 // ============================================
 
 function mapUrl(latitude, longitude) {
@@ -168,8 +174,8 @@ function createSummary(country) {
         "The reported population is " +
         formatNumber(country.population) +
         " and its area is " +
-        formatNumber(country.area) +
-        " km². " +
+        formatArea(country.area) +
+        ". " +
         "The currency information is " +
         currency +
         ". " +
@@ -181,6 +187,82 @@ function createSummary(country) {
 
 
 // ============================================
+// FORMAT AREA
+// ============================================
+
+function formatArea(value) {
+
+    if (
+        value === null ||
+        value === undefined ||
+        value === "" ||
+        value === "Not available"
+    ) {
+        return "Information not available";
+    }
+
+    if (typeof value === "number") {
+        return (
+            new Intl.NumberFormat("en-IN").format(value) +
+            " km²"
+        );
+    }
+
+    return value;
+}
+
+
+// ============================================
+// GET FLAG URL
+// ============================================
+
+function getFlagUrl(country) {
+
+    // ----------------------------------------
+    // 1. Use flag URL from backend if available
+    // ----------------------------------------
+
+    if (
+        country.flag &&
+        typeof country.flag === "string" &&
+        (
+            country.flag.startsWith("http://") ||
+            country.flag.startsWith("https://")
+        )
+    ) {
+        return country.flag;
+    }
+
+    // ----------------------------------------
+    // 2. Build flag URL using ISO alpha-2 code
+    // ----------------------------------------
+
+    if (country.cca2) {
+
+        const code =
+            String(country.cca2)
+                .trim()
+                .toLowerCase();
+
+        if (code.length === 2) {
+
+            return (
+                "https://flagcdn.com/w640/" +
+                code +
+                ".png"
+            );
+        }
+    }
+
+    // ----------------------------------------
+    // 3. No image available
+    // ----------------------------------------
+
+    return "";
+}
+
+
+// ============================================
 // DISPLAY COUNTRY
 // ============================================
 
@@ -188,15 +270,29 @@ function renderCountry(country) {
 
     currentCountry = country;
 
-    // Hide loading/error
-    $("loading").classList.add("hidden");
+    // ----------------------------------------
+    // Hide loading and error
+    // ----------------------------------------
 
-    $("errorBox").classList.add("hidden");
+    if ($("loading")) {
+        $("loading").classList.add("hidden");
+    }
 
-    $("emptyState").classList.add("hidden");
+    if ($("errorBox")) {
+        $("errorBox").classList.add("hidden");
+    }
 
+    if ($("emptyState")) {
+        $("emptyState").classList.add("hidden");
+    }
+
+    // ----------------------------------------
     // Show result
-    $("countryResult").classList.remove("hidden");
+    // ----------------------------------------
+
+    if ($("countryResult")) {
+        $("countryResult").classList.remove("hidden");
+    }
 
 
     // ========================================
@@ -205,22 +301,66 @@ function renderCountry(country) {
 
     const flag = $("flag");
 
-    if (country.flag) {
+    if (flag) {
 
-        flag.textContent = country.flag;
+        const flagUrl =
+            getFlagUrl(country);
 
-        flag.removeAttribute("src");
+        if (flagUrl) {
 
-        flag.alt =
-            country.name + " flag";
+            // IMPORTANT:
+            // Put URL into image SRC
+            // Do NOT use textContent here.
 
-    } else {
+            flag.src = flagUrl;
 
-        flag.src = "";
+            flag.alt =
+                country.name +
+                " flag";
 
-        flag.alt =
-            country.name + " flag";
+            // Clear old text
+            flag.textContent = "";
 
+            // If image fails, try another flag URL
+            flag.onerror = function () {
+
+                if (country.cca2) {
+
+                    const code =
+                        String(country.cca2)
+                            .trim()
+                            .toLowerCase();
+
+                    const fallbackUrl =
+                        "https://flagcdn.com/" +
+                        code +
+                        ".svg";
+
+                    if (
+                        flag.src !== fallbackUrl
+                    ) {
+                        flag.src = fallbackUrl;
+                        return;
+                    }
+                }
+
+                // Final fallback
+                flag.removeAttribute("src");
+                flag.alt =
+                    country.name +
+                    " flag unavailable";
+
+            };
+
+        } else {
+
+            flag.removeAttribute("src");
+
+            flag.alt =
+                country.name +
+                " flag unavailable";
+
+        }
     }
 
 
@@ -240,20 +380,22 @@ function renderCountry(country) {
 
     setText(
         "capitalPill",
-        "🏛️ " + country.capital
+        "🏛️ " + (country.capital || "Not available")
     );
 
     setText(
         "regionPill",
-        "🌍 " + country.region
+        "🌍 " + (country.region || "Not available")
     );
 
     setText(
         "codePill",
         (country.cca2 || "") +
-        (country.cca3 ?
+        (
+            country.cca3 ?
             " / " + country.cca3 :
-            "")
+            ""
+        )
     );
 
 
@@ -268,9 +410,7 @@ function renderCountry(country) {
 
     setText(
         "area",
-        country.area !== "Not available" ?
-        formatNumber(country.area) + " km²" :
-        "Information not available"
+        formatArea(country.area)
     );
 
     setText(
@@ -280,7 +420,9 @@ function renderCountry(country) {
 
     setText(
         "languages",
-        arrayText(country.languages)
+        country.languages
+        ? arrayText(country.languages)
+        : country.language_text
     );
 
     setText(
@@ -300,226 +442,240 @@ function renderCountry(country) {
 
     const basic = $("basicInfo");
 
-    basic.innerHTML = "";
+    if (basic) {
 
-    addDetail(
-        basic,
-        "Country",
-        country.name
-    );
+        basic.innerHTML = "";
 
-    addDetail(
-        basic,
-        "Official name",
-        country.official_name
-    );
+        addDetail(
+            basic,
+            "Country",
+            country.name
+        );
 
-    addDetail(
-        basic,
-        "Capital",
-        country.capital
-    );
+        addDetail(
+            basic,
+            "Official name",
+            country.official_name
+        );
 
-    addDetail(
-        basic,
-        "Continent",
-        country.continent
-    );
+        addDetail(
+            basic,
+            "Capital",
+            country.capital
+        );
 
-    addDetail(
-        basic,
-        "Region",
-        country.region
-    );
+        addDetail(
+            basic,
+            "Continent",
+            country.continent
+        );
 
-    addDetail(
-        basic,
-        "Subregion",
-        country.subregion
-    );
+        addDetail(
+            basic,
+            "Region",
+            country.region
+        );
 
-    addDetail(
-        basic,
-        "Population",
-        formatNumber(country.population)
-    );
+        addDetail(
+            basic,
+            "Subregion",
+            country.subregion
+        );
 
-    addDetail(
-        basic,
-        "Area",
-        country.area !== "Not available" ?
-        formatNumber(country.area) + " km²" :
-        "Information not available"
-    );
+        addDetail(
+            basic,
+            "Population",
+            formatNumber(country.population)
+        );
 
-    addDetail(
-        basic,
-        "Calling code",
-        country.calling_code
-    );
+        addDetail(
+            basic,
+            "Area",
+            formatArea(country.area)
+        );
 
-    addDetail(
-        basic,
-        "ISO codes", [
-            country.cca2,
-            country.cca3,
-            country.ccn3
-        ]
-        .filter(Boolean)
-        .join(" / ")
-    );
+        addDetail(
+            basic,
+            "Calling code",
+            country.calling_code
+        );
 
-    addDetail(
-        basic,
-        "Internet domain",
-        country.tld_text
-    );
+        addDetail(
+            basic,
+            "ISO codes",
+            [
+                country.cca2,
+                country.cca3,
+                country.ccn3
+            ]
+            .filter(Boolean)
+            .join(" / ")
+        );
 
-    addDetail(
-        basic,
-        "Driving side",
-        country.driving_side
-    );
+        addDetail(
+            basic,
+            "Internet domain",
+            country.tld_text
+        );
 
-    addDetail(
-        basic,
-        "Demonym",
-        country.demonym
-    );
+        addDetail(
+            basic,
+            "Driving side",
+            country.driving_side
+        );
+
+        addDetail(
+            basic,
+            "Demonym",
+            country.demonym
+        );
+    }
 
 
     // ========================================
     // NATIONAL IDENTITY
     // ========================================
 
-    const identity =
-        $("identityInfo");
+    const identity = $("identityInfo");
 
-    identity.innerHTML = "";
+    if (identity) {
 
-    addDetail(
-        identity,
-        "National flag",
-        country.flag ?
-        country.flag :
-        "Information not available"
-    );
+        identity.innerHTML = "";
 
-    addDetail(
-        identity,
-        "Capital",
-        country.capital
-    );
+        const flagUrl =
+            getFlagUrl(country);
 
-    addDetail(
-        identity,
-        "Currency",
-        country.currency
-    );
+        addDetail(
+            identity,
+            "National flag",
+            flagUrl ||
+            "Information not available"
+        );
 
-    addDetail(
-        identity,
-        "Languages",
-        arrayText(country.languages)
-    );
+        addDetail(
+            identity,
+            "Capital",
+            country.capital
+        );
 
-    addDetail(
-        identity,
-        "National animal",
-        "Information not available from selected API"
-    );
+        addDetail(
+            identity,
+            "Currency",
+            country.currency
+        );
 
-    addDetail(
-        identity,
-        "National bird",
-        "Information not available from selected API"
-    );
+        addDetail(
+            identity,
+            "Languages",
+            country.languages
+            ? arrayText(country.languages)
+            : country.language_text
+        );
 
-    addDetail(
-        identity,
-        "National flower",
-        "Information not available from selected API"
-    );
+        addDetail(
+            identity,
+            "National animal",
+            "Information not available from selected API"
+        );
 
-    addDetail(
-        identity,
-        "National tree",
-        "Information not available from selected API"
-    );
+        addDetail(
+            identity,
+            "National bird",
+            "Information not available from selected API"
+        );
 
-    addDetail(
-        identity,
-        "National motto",
-        "Information not available from selected API"
-    );
+        addDetail(
+            identity,
+            "National flower",
+            "Information not available from selected API"
+        );
+
+        addDetail(
+            identity,
+            "National tree",
+            "Information not available from selected API"
+        );
+
+        addDetail(
+            identity,
+            "National motto",
+            "Information not available from selected API"
+        );
+    }
 
 
     // ========================================
     // GEOGRAPHY
     // ========================================
 
-    const geo =
-        $("geoInfo");
+    const geo = $("geoInfo");
 
-    geo.innerHTML = "";
+    if (geo) {
 
-    const coordinates =
-        country.latitude !== null &&
-        country.longitude !== null ?
-        country.latitude +
-        ", " +
-        country.longitude :
-        "Information not available";
+        geo.innerHTML = "";
 
-    addDetail(
-        geo,
-        "Coordinates",
-        coordinates
-    );
+        const coordinates =
+            country.latitude !== null &&
+            country.longitude !== null &&
+            country.latitude !== undefined &&
+            country.longitude !== undefined
+            ?
+            country.latitude +
+            ", " +
+            country.longitude
+            :
+            "Information not available";
 
-    addDetail(
-        geo,
-        "Landlocked",
-        country.landlocked ?
-        "Yes" :
-        "No"
-    );
+        addDetail(
+            geo,
+            "Coordinates",
+            coordinates
+        );
 
-    addDetail(
-        geo,
-        "Borders",
-        country.borders_text
-    );
+        addDetail(
+            geo,
+            "Landlocked",
+            country.landlocked ?
+            "Yes" :
+            "No"
+        );
 
-    addDetail(
-        geo,
-        "Time zones",
-        country.timezone_text
-    );
+        addDetail(
+            geo,
+            "Borders",
+            country.borders_text
+        );
 
-    addDetail(
-        geo,
-        "Continent",
-        country.continent
-    );
+        addDetail(
+            geo,
+            "Time zones",
+            country.timezone_text
+        );
 
-    addDetail(
-        geo,
-        "Region",
-        country.region
-    );
+        addDetail(
+            geo,
+            "Continent",
+            country.continent
+        );
 
-    addDetail(
-        geo,
-        "Subregion",
-        country.subregion
-    );
+        addDetail(
+            geo,
+            "Region",
+            country.region
+        );
 
-    addDetail(
-        geo,
-        "Start of week",
-        country.start_of_week
-    );
+        addDetail(
+            geo,
+            "Subregion",
+            country.subregion
+        );
+
+        addDetail(
+            geo,
+            "Start of week",
+            country.start_of_week
+        );
+    }
 
 
     // ========================================
@@ -546,53 +702,56 @@ function renderCountry(country) {
     const government =
         $("governmentInfo");
 
-    government.innerHTML = "";
+    if (government) {
 
-    addDetail(
-        government,
-        "UN member",
-        country.un_member ?
-        "Yes" :
-        "No / not reported"
-    );
+        government.innerHTML = "";
 
-    addDetail(
-        government,
-        "Independent",
-        country.independent ?
-        "Yes" :
-        "Not reported"
-    );
+        addDetail(
+            government,
+            "UN member",
+            country.un_member ?
+            "Yes" :
+            "No / not reported"
+        );
 
-    addDetail(
-        government,
-        "Country status",
-        country.status
-    );
+        addDetail(
+            government,
+            "Independent",
+            country.independent ?
+            "Yes" :
+            "Not reported"
+        );
 
-    addDetail(
-        government,
-        "Administrative divisions",
-        "Not supplied by selected API"
-    );
+        addDetail(
+            government,
+            "Country status",
+            country.status
+        );
 
-    addDetail(
-        government,
-        "Head of state",
-        "Not supplied by selected API"
-    );
+        addDetail(
+            government,
+            "Administrative divisions",
+            "Not supplied by selected API"
+        );
 
-    addDetail(
-        government,
-        "Head of government",
-        "Not supplied by selected API"
-    );
+        addDetail(
+            government,
+            "Head of state",
+            "Not supplied by selected API"
+        );
 
-    addDetail(
-        government,
-        "Government type",
-        "Not supplied by selected API"
-    );
+        addDetail(
+            government,
+            "Head of government",
+            "Not supplied by selected API"
+        );
+
+        addDetail(
+            government,
+            "Government type",
+            "Not supplied by selected API"
+        );
+    }
 
 
     // ========================================
@@ -626,11 +785,17 @@ function renderCountry(country) {
     addHistory(country);
 
 
-    // Scroll to result
-    $("countryResult").scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-    });
+    // ========================================
+    // SCROLL TO RESULT
+    // ========================================
+
+    if ($("countryResult")) {
+
+        $("countryResult").scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    }
 }
 
 
@@ -641,9 +806,12 @@ function renderCountry(country) {
 async function searchCountry(countryName) {
 
     const cleanName =
-        countryName.trim();
+        String(countryName || "").trim();
 
+    // ----------------------------------------
     // Don't search empty input
+    // ----------------------------------------
+
     if (!cleanName) {
 
         showError(
@@ -654,20 +822,33 @@ async function searchCountry(countryName) {
     }
 
 
+    // ----------------------------------------
     // Show loading
-    $("emptyState").classList.add("hidden");
+    // ----------------------------------------
 
-    $("countryResult").classList.add("hidden");
+    if ($("emptyState")) {
+        $("emptyState").classList.add("hidden");
+    }
 
-    $("errorBox").classList.add("hidden");
+    if ($("countryResult")) {
+        $("countryResult").classList.add("hidden");
+    }
 
-    $("loading").classList.remove("hidden");
+    if ($("errorBox")) {
+        $("errorBox").classList.add("hidden");
+    }
+
+    if ($("loading")) {
+        $("loading").classList.remove("hidden");
+    }
 
 
     try {
 
-        // IMPORTANT:
-        // Use the CURRENT country typed by user
+        // ------------------------------------
+        // Create request URL
+        // ------------------------------------
+
         const url =
             "/api/country/" +
             encodeURIComponent(cleanName);
@@ -684,9 +865,14 @@ async function searchCountry(countryName) {
         );
 
 
+        // ------------------------------------
+        // Fetch data
+        // ------------------------------------
+
         const response =
             await fetch(
-                url, {
+                url,
+                {
                     cache: "no-cache"
                 }
             );
@@ -702,6 +888,10 @@ async function searchCountry(countryName) {
         );
 
 
+        // ------------------------------------
+        // Check response
+        // ------------------------------------
+
         if (!response.ok) {
 
             throw new Error(
@@ -711,7 +901,30 @@ async function searchCountry(countryName) {
         }
 
 
-        renderCountry(data);
+        // ------------------------------------
+        // Support both API formats
+        //
+        // Format 1:
+        // { name: "India", ... }
+        //
+        // Format 2:
+        // { success: true, country: {...} }
+        // ------------------------------------
+
+        const country =
+            data.country &&
+            typeof data.country === "object"
+            ?
+            data.country
+            :
+            data;
+
+
+        // ------------------------------------
+        // Display country
+        // ------------------------------------
+
+        renderCountry(country);
 
 
     } catch (error) {
@@ -721,7 +934,9 @@ async function searchCountry(countryName) {
             error
         );
 
-        $("loading").classList.add("hidden");
+        if ($("loading")) {
+            $("loading").classList.add("hidden");
+        }
 
         showError(
             error.message ||
@@ -737,16 +952,25 @@ async function searchCountry(countryName) {
 
 function showError(message) {
 
-    $("emptyState").classList.add("hidden");
+    if ($("emptyState")) {
+        $("emptyState").classList.add("hidden");
+    }
 
-    $("countryResult").classList.add("hidden");
+    if ($("countryResult")) {
+        $("countryResult").classList.add("hidden");
+    }
 
-    $("loading").classList.add("hidden");
+    if ($("loading")) {
+        $("loading").classList.add("hidden");
+    }
 
-    $("errorBox").textContent =
-        message;
+    if ($("errorBox")) {
 
-    $("errorBox").classList.remove("hidden");
+        $("errorBox").textContent =
+            message;
+
+        $("errorBox").classList.remove("hidden");
+    }
 }
 
 
@@ -759,7 +983,8 @@ function addHistory(country) {
     history =
         history.filter(
             item =>
-            item.name !== country.name
+                item.name !==
+                country.name
         );
 
 
@@ -767,7 +992,8 @@ function addHistory(country) {
 
         name: country.name,
 
-        flag: country.flag
+        flag:
+            getFlagUrl(country)
 
     });
 
@@ -819,16 +1045,21 @@ function renderHistory() {
                     "button"
                 );
 
+
             button.className =
                 "favorite-chip";
+
 
             button.textContent =
                 item.name;
 
+
             button.onclick =
-                () => searchCountry(
-                    item.name
-                );
+                () =>
+                    searchCountry(
+                        item.name
+                    );
+
 
             box.appendChild(
                 button
@@ -871,16 +1102,21 @@ function renderFavorites() {
                     "button"
                 );
 
+
             button.className =
                 "favorite-chip";
+
 
             button.textContent =
                 "⭐ " + item.name;
 
+
             button.onclick =
-                () => searchCountry(
-                    item.name
-                );
+                () =>
+                    searchCountry(
+                        item.name
+                    );
+
 
             box.appendChild(
                 button
@@ -904,16 +1140,24 @@ function updateFavoriteButton() {
     const saved =
         favorites.some(
             item =>
-            item.name ===
-            currentCountry.name
+                item.name ===
+                currentCountry.name
         );
 
 
-    $("favoriteBtn").textContent =
+    const button =
+        $("favoriteBtn");
+
+    if (!button) {
+        return;
+    }
+
+
+    button.textContent =
         saved ? "★" : "☆";
 
 
-    $("favoriteBtn").classList.toggle(
+    button.classList.toggle(
         "saved",
         saved
     );
@@ -924,28 +1168,36 @@ function updateFavoriteButton() {
 // SEARCH FORM
 // ============================================
 
-$("searchForm").addEventListener(
-    "submit",
-    function(event) {
+const searchForm =
+    $("searchForm");
 
-        event.preventDefault();
+if (searchForm) {
 
+    searchForm.addEventListener(
+        "submit",
+        function(event) {
 
-        // IMPORTANT:
-        // Read the input EVERY time
-        const country =
-            $("countryInput").value;
-
-
-        console.log(
-            "User entered:",
-            country
-        );
+            event.preventDefault();
 
 
-        searchCountry(country);
-    }
-);
+            // Read current input every time
+
+            const country =
+                $("countryInput")
+                ? $("countryInput").value
+                : "";
+
+
+            console.log(
+                "User entered:",
+                country
+            );
+
+
+            searchCountry(country);
+        }
+    );
+}
 
 
 // ============================================
@@ -965,8 +1217,11 @@ document
                         button.dataset.country;
 
 
-                    $("countryInput").value =
-                        country;
+                    if ($("countryInput")) {
+
+                        $("countryInput").value =
+                            country;
+                    }
 
 
                     searchCountry(
@@ -982,110 +1237,140 @@ document
 // FAVORITE BUTTON CLICK
 // ============================================
 
-$("favoriteBtn").addEventListener(
-    "click",
-    function() {
+const favoriteBtn =
+    $("favoriteBtn");
 
-        if (!currentCountry) {
-            return;
-        }
+if (favoriteBtn) {
+
+    favoriteBtn.addEventListener(
+        "click",
+        function() {
+
+            if (!currentCountry) {
+                return;
+            }
 
 
-        const index =
-            favorites.findIndex(
-                item =>
-                item.name ===
-                currentCountry.name
+            const index =
+                favorites.findIndex(
+                    item =>
+                        item.name ===
+                        currentCountry.name
+                );
+
+
+            if (index >= 0) {
+
+                // Remove favorite
+
+                favorites.splice(
+                    index,
+                    1
+                );
+
+            } else {
+
+                // Add favorite
+
+                favorites.unshift({
+
+                    name:
+                        currentCountry.name,
+
+                    flag:
+                        getFlagUrl(
+                            currentCountry
+                        )
+                });
+
+
+                favorites =
+                    favorites.slice(0, 20);
+            }
+
+
+            localStorage.setItem(
+                "cv_favorites",
+                JSON.stringify(
+                    favorites
+                )
             );
 
 
-        if (index >= 0) {
+            updateFavoriteButton();
 
-            favorites.splice(
-                index,
-                1
-            );
-
-        } else {
-
-            favorites.unshift({
-
-                name: currentCountry.name,
-
-                flag: currentCountry.flag
-            });
-
-
-            favorites =
-                favorites.slice(0, 20);
+            renderFavorites();
         }
-
-
-        localStorage.setItem(
-            "cv_favorites",
-            JSON.stringify(favorites)
-        );
-
-
-        updateFavoriteButton();
-
-        renderFavorites();
-    }
-);
+    );
+}
 
 
 // ============================================
 // CLEAR HISTORY
 // ============================================
 
-$("clearHistory").addEventListener(
-    "click",
-    function() {
+const clearHistory =
+    $("clearHistory");
 
-        history = [];
+if (clearHistory) {
 
-        localStorage.removeItem(
-            "cv_history"
-        );
+    clearHistory.addEventListener(
+        "click",
+        function() {
 
-        renderHistory();
-    }
-);
+            history = [];
+
+
+            localStorage.removeItem(
+                "cv_history"
+            );
+
+
+            renderHistory();
+        }
+    );
+}
 
 
 // ============================================
 // DARK MODE
 // ============================================
 
-$("themeBtn").addEventListener(
-    "click",
-    function() {
+const themeBtn =
+    $("themeBtn");
 
-        document.body.classList.toggle(
-            "dark"
-        );
+if (themeBtn) {
 
+    themeBtn.addEventListener(
+        "click",
+        function() {
 
-        const dark =
-            document.body.classList.contains(
+            document.body.classList.toggle(
                 "dark"
             );
 
 
-        localStorage.setItem(
-            "cv_theme",
-            dark ?
-            "dark" :
-            "light"
-        );
+            const dark =
+                document.body.classList.contains(
+                    "dark"
+                );
 
 
-        $("themeBtn").textContent =
-            dark ?
-            "☀" :
-            "☾";
-    }
-);
+            localStorage.setItem(
+                "cv_theme",
+                dark ?
+                    "dark" :
+                    "light"
+            );
+
+
+            themeBtn.textContent =
+                dark ?
+                    "☀" :
+                    "☾";
+        }
+    );
+}
 
 
 // ============================================
@@ -1102,8 +1387,12 @@ if (
         "dark"
     );
 
-    $("themeBtn").textContent =
-        "☀";
+
+    if (themeBtn) {
+
+        themeBtn.textContent =
+            "☀";
+    }
 }
 
 
@@ -1116,7 +1405,10 @@ renderHistory();
 renderFavorites();
 
 
-// IMPORTANT:
+// ============================================
+// IMPORTANT
+// ============================================
 // DO NOT SEARCH FOR CANADA HERE.
-// The website should wait for the user
+// The website waits for the user
 // to enter a country.
+// ============================================
